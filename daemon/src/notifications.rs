@@ -18,7 +18,7 @@ pub enum NotificationError {
     HttpError(reqwest::StatusCode),
 }
 
-#[derive(Hash, Eq, PartialEq, Debug, Clone, Serialize, Deserialize)]
+#[derive(Hash, Eq, PartialEq, Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub enum NotificationType {
     Warning,
     LowBattery,

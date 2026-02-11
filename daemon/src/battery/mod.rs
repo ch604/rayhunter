@@ -18,7 +18,7 @@ pub mod wingtech;
 
 const LOW_BATTERY_LEVEL: u8 = 10;
 
-#[derive(Clone, Copy, PartialEq, Debug, Serialize)]
+#[derive(Clone, Copy, PartialEq, Debug, Serialize, utoipa::ToSchema)]
 pub struct BatteryState {
     level: u8,
     is_plugged_in: bool,

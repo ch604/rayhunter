@@ -7,7 +7,7 @@ use rayhunter::analysis::analyzer::AnalyzerConfig;
 use crate::error::RayhunterError;
 use crate::notifications::NotificationType;
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, utoipa::ToSchema)]
 #[serde(default)]
 pub struct Config {
     pub qmdl_store_path: String,

@@ -77,7 +77,7 @@ impl AnalysisWriter {
     }
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, Clone, utoipa::ToSchema)]
 pub struct AnalysisStatus {
     queued: Vec<String>,
     running: Option<String>,
@@ -215,6 +215,16 @@ pub fn run_analysis_thread(
     });
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/analysis",
+    tag = "recordings",
+    responses(
+        (status = StatusCode::OK, description = "Success", body = AnalysisStatus)
+    ),
+    summary = "Analysis status",
+    description = "Show analysis status for all QMDL files."
+)]
 pub async fn get_analysis_status(
     State(state): State<Arc<ServerState>>,
 ) -> Result<Json<AnalysisStatus>, (StatusCode, String)> {
@@ -231,6 +241,20 @@ fn queue_qmdl(name: &str, analysis_status: &mut RwLockWriteGuard<AnalysisStatus>
     true
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/analysis/{name}",
+    tag = "recordings",
+    responses(
+        (status = StatusCode::ACCEPTED, description = "Success"),
+        (status = StatusCode::INTERNAL_SERVER_ERROR, description = "Unable to queue analysis file")
+    ),
+    params(
+        ("name" = String, Path, description = "QMDL file to analyze")
+    ),
+    summary = "Start analysis",
+    description = "Begin analysis of QMDL file {name}."
+)]
 pub async fn start_analysis(
     State(state): State<Arc<ServerState>>,
     Path(qmdl_name): Path<String>,

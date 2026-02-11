@@ -12,7 +12,7 @@ pub mod tplink_onebit;
 pub mod uz801;
 pub mod wingtech;
 
-#[derive(Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
 pub enum DisplayState {
     /// We're recording but no warning has been found yet.
     Recording,

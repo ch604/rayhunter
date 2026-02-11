@@ -45,10 +45,12 @@ pub struct Manifest {
     pub entries: Vec<ManifestEntry>,
 }
 
-#[derive(Deserialize, Serialize, Clone, PartialEq, Debug)]
+#[derive(Deserialize, Serialize, Clone, PartialEq, Debug, utoipa::ToSchema)]
 pub struct ManifestEntry {
     pub name: String,
+    #[schema(value_type = String)]
     pub start_time: DateTime<Local>,
+    #[schema(value_type = String)]
     pub last_message_time: Option<DateTime<Local>>,
     pub qmdl_size_bytes: usize,
     pub rayhunter_version: Option<String>,

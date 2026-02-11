@@ -13,7 +13,7 @@ use rayhunter::{Device, util::RuntimeMetadata};
 use serde::Serialize;
 use tokio::process::Command;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
 pub struct SystemStats {
     pub disk_stats: DiskStats,
     pub memory_stats: MemoryStats,
@@ -40,7 +40,7 @@ impl SystemStats {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
 pub struct DiskStats {
     partition: String,
     total_size: String,
@@ -79,7 +79,7 @@ impl DiskStats {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
 pub struct MemoryStats {
     total: String,
     used: String,
@@ -135,6 +135,17 @@ fn humanize_kb(kb: usize) -> String {
     format!("{:.1}M", kb as f64 / 1024.0)
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/system-stats",
+    tag = "statistics",
+    responses(
+        (status = StatusCode::OK, description = "Success", body = SystemStats),
+        (status = StatusCode::INTERNAL_SERVER_ERROR, description = "Error collecting statistics")
+    ),
+    summary = "Get system info",
+    description = "Display system/device statistics."
+)]
 pub async fn get_system_stats(
     State(state): State<Arc<ServerState>>,
 ) -> Result<Json<SystemStats>, (StatusCode, String)> {
@@ -151,12 +162,22 @@ pub async fn get_system_stats(
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, utoipa::ToSchema)]
 pub struct ManifestStats {
     pub entries: Vec<ManifestEntry>,
     pub current_entry: Option<ManifestEntry>,
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/qmdl-manifest",
+    tag = "statistics",
+    responses(
+        (status = StatusCode::OK, description = "Success", body = ManifestStats)
+    ),
+    summary = "QMDL Manifest",
+    description = "List QMDL files available on the device and some of their basic statistics."
+)]
 pub async fn get_qmdl_manifest(
     State(state): State<Arc<ServerState>>,
 ) -> Result<Json<ManifestStats>, (StatusCode, String)> {
@@ -169,6 +190,17 @@ pub async fn get_qmdl_manifest(
     }))
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/log",
+    tag = "statistics",
+    responses(
+        (status = StatusCode::OK, description = "Success", content_type = "text/plain"),
+        (status = StatusCode::INTERNAL_SERVER_ERROR, description = "Could not read /data/rayhunter/rayhunter.log file")
+    ),
+    summary = "Display log",
+    description = "Download the current device log in UTF-8 plaintext."
+)]
 pub async fn get_log() -> Result<String, (StatusCode, String)> {
     tokio::fs::read_to_string("/data/rayhunter/rayhunter.log")
         .await

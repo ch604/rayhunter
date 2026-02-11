@@ -17,7 +17,7 @@ use super::{
     test_analyzer::TestAnalyzer,
 };
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, utoipa::ToSchema)]
 #[serde(default)]
 pub struct AnalyzerConfig {
     pub diagnostic_analyzer: bool,
@@ -50,7 +50,7 @@ pub const REPORT_VERSION: u32 = 2;
 /// The severity level of an event.
 ///
 /// Informational does not result in any alert on the display.
-#[derive(Serialize, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Serialize, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, utoipa::ToSchema)]
 pub enum EventType {
     Informational = 0,
     Low = 1,
@@ -140,14 +140,14 @@ pub trait Analyzer {
     fn get_version(&self) -> u32;
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, utoipa::ToSchema)]
 pub struct AnalyzerMetadata {
     pub name: String,
     pub description: String,
     pub version: u32,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, utoipa::ToSchema)]
 #[serde(default)]
 #[derive(Default)]
 pub struct ReportMetadata {

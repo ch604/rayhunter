@@ -17,7 +17,9 @@ use tokio::sync::{RwLock, oneshot};
 use tokio_stream::wrappers::LinesStream;
 use tokio_util::task::TaskTracker;
 
-use rayhunter::analysis::analyzer::{AnalysisLineNormalizer, AnalyzerConfig, EventType, ReportMetadata};
+use rayhunter::analysis::analyzer::{
+    AnalysisLineNormalizer, AnalyzerConfig, EventType, ReportMetadata,
+};
 use rayhunter::diag::{DataType, MessagesContainer};
 use rayhunter::diag_device::DiagDevice;
 use rayhunter::qmdl::QmdlWriter;

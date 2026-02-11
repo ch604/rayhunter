@@ -1,4 +1,4 @@
-use std::{fs, env};
+use std::{env, fs};
 
 fn main() {
     let content = rayhunter_daemon::ApiDocs::generate();

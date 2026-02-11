@@ -305,9 +305,6 @@ async fn run_with_config(
     Ok(restart_token.is_cancelled())
 }
 
-
-
-
 #[cfg(test)]
 mod test {
     use super::*;

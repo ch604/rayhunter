@@ -21,7 +21,7 @@ use tokio_util::compat::FuturesAsyncWriteCompatExt;
 use tokio_util::io::ReaderStream;
 use tokio_util::sync::CancellationToken;
 
-use crate::DiagDeviceCtrlMessage;
+use crate::diag::DiagDeviceCtrlMessage;
 use crate::analysis::{AnalysisCtrlMessage, AnalysisStatus};
 use crate::config::Config;
 use crate::display::DisplayState;

@@ -4,6 +4,10 @@ version = "0.10.1"
 edition = "2024"
 rust-version = "1.88.0"
 
+[lib]
+name = "rayhunter_daemon"
+path = "src/lib.rs"
+
 [features]
 default = ["rustcrypto-tls"]
 rustcrypto-tls = ["reqwest/rustls-tls-webpki-roots-no-provider", "dep:rustls-rustcrypto"]

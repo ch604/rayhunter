@@ -1,5 +1,7 @@
 # API Documentation
 
+**Note:** API endpoints are subject to change as needs arise, though we will try to keep them as stable as possible and notify about breaking changes in the changelogs for new versions. 
+
 As with the rest of Rayhunter, endpoints require no authentication.
 
 ## Configuration

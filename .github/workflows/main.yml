@@ -6,6 +6,7 @@ on:
   pull_request:
     branches: [ main ]
   workflow_call:  # required to call this workflow from another workflow like release.yml
+  workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always

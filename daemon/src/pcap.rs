@@ -21,7 +21,7 @@ use tokio_util::io::ReaderStream;
 #[utoipa::path(
     get,
     path = "/api/pcap/{name}",
-    tag = "recordings",
+    tag = "Recordings",
     responses(
         (status = StatusCode::OK, description = "PCAP conversion successful", content_type = "application/vnd.tcpdump.pcap"),
         (status = StatusCode::NOT_FOUND, description = "Could not find file {name}"),

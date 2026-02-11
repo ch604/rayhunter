@@ -18,6 +18,7 @@ pub enum NotificationError {
     HttpError(reqwest::StatusCode),
 }
 
+/// Enum of valid notification types
 #[derive(Hash, Eq, PartialEq, Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub enum NotificationType {
     Warning,

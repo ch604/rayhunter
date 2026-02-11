@@ -308,7 +308,7 @@ pub fn run_diag_read_thread(
 #[utoipa::path(
     post,
     path = "/api/start-recording",
-    tag = "recordings",
+    tag = "Recordings",
     responses(
         (status = StatusCode::ACCEPTED, description = "Success"),
         (status = StatusCode::FORBIDDEN, description = "System is in debug mode"),
@@ -342,7 +342,7 @@ pub async fn start_recording(
 #[utoipa::path(
     post,
     path = "/api/stop-recording",
-    tag = "recordings",
+    tag = "Recordings",
     responses(
         (status = StatusCode::ACCEPTED, description = "Success"),
         (status = StatusCode::FORBIDDEN, description = "System is in debug mode"),
@@ -373,7 +373,7 @@ pub async fn stop_recording(
 #[utoipa::path(
     post,
     path = "/api/delete-recording/{name}",
-    tag = "recordings",
+    tag = "Recordings",
     responses(
         (status = StatusCode::ACCEPTED, description = "Success"),
         (status = StatusCode::FORBIDDEN, description = "System is in debug mode"),
@@ -428,7 +428,7 @@ pub async fn delete_recording(
 #[utoipa::path(
     post,
     path = "/api/delete-all-recordings",
-    tag = "recordings",
+    tag = "Recordings",
     responses(
         (status = StatusCode::ACCEPTED, description = "Success"),
         (status = StatusCode::FORBIDDEN, description = "System is in debug mode"),
@@ -471,7 +471,7 @@ pub async fn delete_all_recordings(
 #[utoipa::path(
     get,
     path = "/api/analysis-report/{name}",
-    tag = "recordings",
+    tag = "Recordings",
     responses(
         (status = StatusCode::OK, description = "Success", body = ReportMetadata, content_type = "application/x-ndjson"),
         (status = StatusCode::SERVICE_UNAVAILABLE, description = "No QMDL files available; start a new recording."),

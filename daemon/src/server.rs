@@ -42,7 +42,7 @@ pub struct ServerState {
 #[utoipa::path(
     get,
     path = "/api/qmdl/{name}",
-    tag = "recordings",
+    tag = "Recordings",
     responses(
         (status = StatusCode::OK, description = "QMDL download successful", content_type = "application/octet-stream"),
         (status = StatusCode::NOT_FOUND, description = "Could not find file {name}"),
@@ -93,17 +93,17 @@ pub async fn serve_static(
     match path {
         "rayhunter_orca_only.png" => (
             [(header::CONTENT_TYPE, HeaderValue::from_static("image/png"))],
-            include_bytes!("../web/build/rayhunter_orca_only.png"),
+//            include_bytes!("../web/build/rayhunter_orca_only.png"),
         )
             .into_response(),
         "rayhunter_text.png" => (
             [(header::CONTENT_TYPE, HeaderValue::from_static("image/png"))],
-            include_bytes!("../web/build/rayhunter_text.png"),
+//            include_bytes!("../web/build/rayhunter_text.png"),
         )
             .into_response(),
         "favicon.png" => (
             [(header::CONTENT_TYPE, HeaderValue::from_static("image/png"))],
-            include_bytes!("../web/build/favicon.png"),
+//            include_bytes!("../web/build/favicon.png"),
         )
             .into_response(),
         "index.html" => (
@@ -111,7 +111,7 @@ pub async fn serve_static(
                 (header::CONTENT_TYPE, HeaderValue::from_static("text/html")),
                 (header::CONTENT_ENCODING, HeaderValue::from_static("gzip")),
             ],
-            include_bytes!("../web/build/index.html.gz"),
+//            include_bytes!("../web/build/index.html.gz"),
         )
             .into_response(),
         path => {
@@ -124,7 +124,7 @@ pub async fn serve_static(
 #[utoipa::path(
     get,
     path = "/api/config",
-    tag = "configuration",
+    tag = "Configuration",
     responses(
         (status = StatusCode::OK, description = "Success", body = Config)
     ),
@@ -140,7 +140,7 @@ pub async fn get_config(
 #[utoipa::path(
     post,
     path = "/api/config",
-    tag = "configuration",
+    tag = "Configuration",
     request_body(
         content = Option<[Config]>,
         description = "Any or all configuration elements from the valid config schema to be altered may be passed. Invalid keys will be discarded. Invalid values or value types will return an error."
@@ -182,7 +182,7 @@ pub async fn set_config(
 #[utoipa::path(
     post,
     path = "/api/test-notification",
-    tag = "configuration",
+    tag = "Configuration",
     responses(
         (status = StatusCode::OK, description = "Success"),
         (status = StatusCode::BAD_REQUEST, description = "No notification URL set"),
@@ -248,7 +248,7 @@ pub struct SetTimeOffsetRequest {
 #[utoipa::path(
     get,
     path = "/api/time",
-    tag = "configuration",
+    tag = "Configuration",
     responses(
         (status = StatusCode::OK, description = "Success", body = TimeResponse)
     ),
@@ -271,7 +271,7 @@ pub async fn get_time() -> Json<TimeResponse> {
 #[utoipa::path(
     get,
     path = "/api/time-offset",
-    tag = "configuration",
+    tag = "Configuration",
     request_body(
         content = SetTimeOffsetRequest
     ),
@@ -289,7 +289,7 @@ pub async fn set_time_offset(Json(req): Json<SetTimeOffsetRequest>) -> StatusCod
 #[utoipa::path(
     get,
     path = "/api/zip/{name}",
-    tag = "recordings",
+    tag = "Recordings",
     responses(
         (status = StatusCode::OK, description = "ZIP download successful. It is possible that if the PCAP fails to convert, the same status will be returned, but the file will contain only the QMDL file.", content_type = "application/zip"),
         (status = StatusCode::NOT_FOUND, description = "Could not find file {name}"),
@@ -395,7 +395,7 @@ pub async fn get_zip(
 #[utoipa::path(
     post,
     path = "/api/debug/display-state",
-    tag = "configuration",
+    tag = "Configuration",
     request_body(
         content = DisplayState
     ),

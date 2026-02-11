@@ -13,6 +13,7 @@ use rayhunter::{Device, util::RuntimeMetadata};
 use serde::Serialize;
 use tokio::process::Command;
 
+/// Structure of device system statistics
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 pub struct SystemStats {
     pub disk_stats: DiskStats,
@@ -40,13 +41,20 @@ impl SystemStats {
     }
 }
 
+/// Device storage information
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 pub struct DiskStats {
+    /// The partition to which the daemon is installed
     partition: String,
+    /// The total disk size of the partition
     total_size: String,
+    /// Total used size of the partition
     used_size: String,
+    /// Remaining free space of the partition
     available_size: String,
+    /// Disk usage displayed as percentage
     used_percent: String,
+    /// The root folder to which the partition is mounted
     mounted_on: String,
 }
 
@@ -79,10 +87,14 @@ impl DiskStats {
     }
 }
 
+/// Device memory information
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 pub struct MemoryStats {
+    /// The total memory available on the device
     total: String,
+    /// The currently used memory
     used: String,
+    /// Remaining free memory
     free: String,
 }
 
@@ -138,7 +150,7 @@ fn humanize_kb(kb: usize) -> String {
 #[utoipa::path(
     get,
     path = "/api/system-stats",
-    tag = "statistics",
+    tag = "Statistics",
     responses(
         (status = StatusCode::OK, description = "Success", body = SystemStats),
         (status = StatusCode::INTERNAL_SERVER_ERROR, description = "Error collecting statistics")
@@ -162,16 +174,19 @@ pub async fn get_system_stats(
     }
 }
 
+/// QMDL manifest information
 #[derive(Serialize, utoipa::ToSchema)]
 pub struct ManifestStats {
+    /// A vector containing the names of the QMDL files
     pub entries: Vec<ManifestEntry>,
+    /// The currently open QMDL file
     pub current_entry: Option<ManifestEntry>,
 }
 
 #[utoipa::path(
     get,
     path = "/api/qmdl-manifest",
-    tag = "statistics",
+    tag = "Statistics",
     responses(
         (status = StatusCode::OK, description = "Success", body = ManifestStats)
     ),
@@ -193,7 +208,7 @@ pub async fn get_qmdl_manifest(
 #[utoipa::path(
     get,
     path = "/api/log",
-    tag = "statistics",
+    tag = "Statistics",
     responses(
         (status = StatusCode::OK, description = "Success", content_type = "text/plain"),
         (status = StatusCode::INTERNAL_SERVER_ERROR, description = "Could not read /data/rayhunter/rayhunter.log file")

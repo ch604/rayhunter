@@ -12,6 +12,7 @@ pub mod tplink_onebit;
 pub mod uz801;
 pub mod wingtech;
 
+/// A list of available display states
 #[derive(Clone, Copy, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
 pub enum DisplayState {
     /// We're recording but no warning has been found yet.
@@ -19,8 +20,8 @@ pub enum DisplayState {
     /// We're not recording.
     Paused,
     /// A non-informational event has been detected.
-    ///
-    /// Note that EventType::Informational is never sent through this. If it is, it's the same as
-    /// Recording
+    //
+    // Note that EventType::Informational is never sent through this. If it is, it's the same as
+    // Recording
     WarningDetected { event_type: EventType },
 }

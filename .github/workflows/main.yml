@@ -90,14 +90,12 @@ jobs:
       - name: Test mdBook
         run: mdbook test
 
-  mdbook_publish:
-    name: Publish mdBook to Github Pages
+  mdbook_build:
+    name: Build mdBook for Github Pages
     needs: mdbook_test
     if: ${{ github.ref == 'refs/heads/main' }}
     permissions:
-      pages: write
       contents: write
-      id-token: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -110,14 +108,11 @@ jobs:
       - name: Build mdBook
         run: mdbook build
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
+          name: book
           path: book
-      - name: Deploy to Github Pages
-        uses: actions/deploy-pages@v4
 
   check_and_test:
     needs: files_changed
@@ -583,3 +578,66 @@ jobs:
             rayhunter-v${{ env.VERSION }}-${{ matrix.platform }}.zip
             rayhunter-v${{ env.VERSION }}-${{ matrix.platform }}.zip.sha256
           if-no-files-found: error
+
+  openapi_build:
+    if: needs.files_changed.outputs.daemon_needed == 'true'
+    needs:
+      - files_changed
+      - build_rayhunter
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: armv7-unknown-linux-musleabihf
+      - uses: Swatinem/rust-cache@v2
+      - name: Install ARM cross-compilation toolchain
+        run: sudo apt-get update && sudo apt-get install -y gcc-arm-linux-gnueabihf
+      - name: Build rayhunter-daemon openapi docs
+        run: |
+          pushd daemon/web
+          # still need to build these files to avoid compile error for rayhunter-daemon
+          npm install
+          npm run build
+          popd
+          CC_armv7_unknown_linux_musleabihf=arm-linux-gnueabihf-gcc cargo run --bin gen_api -- ./openapi.json
+      - name: Generate swagger-ui
+        uses: Legion2/swagger-ui-action@v1
+        with:
+          spec-file: ./openapi.json
+          output: swagger-ui
+      - uses: actions/upload-artifact@v4
+        with:
+          name: swagger-ui
+          path: swagger-ui
+
+  github_pages_publish:
+    name: Upload new documentation to Github Pages
+    if: ${{ github.ref == 'refs/heads/main' }}
+    permissions:
+      pages: write
+      contents: write
+      id-token: write
+    needs:
+      - mdbook_build
+      - openapi_build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+      - uses: actions/download-artifact@v4
+      - name: Organize pages into directory
+        run: |
+          mkdir deployment
+          cp -a swagger-ui deployment/
+          cp -a book/ deployment/
+      - name: Upload pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: deployment
+      - name: Deploy Github Pages
+        uses: actions/deploy-pages@v4

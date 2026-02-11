@@ -93,17 +93,17 @@ pub async fn serve_static(
     match path {
         "rayhunter_orca_only.png" => (
             [(header::CONTENT_TYPE, HeaderValue::from_static("image/png"))],
-//            include_bytes!("../web/build/rayhunter_orca_only.png"),
+            include_bytes!("../web/build/rayhunter_orca_only.png"),
         )
             .into_response(),
         "rayhunter_text.png" => (
             [(header::CONTENT_TYPE, HeaderValue::from_static("image/png"))],
-//            include_bytes!("../web/build/rayhunter_text.png"),
+            include_bytes!("../web/build/rayhunter_text.png"),
         )
             .into_response(),
         "favicon.png" => (
             [(header::CONTENT_TYPE, HeaderValue::from_static("image/png"))],
-//            include_bytes!("../web/build/favicon.png"),
+            include_bytes!("../web/build/favicon.png"),
         )
             .into_response(),
         "index.html" => (
@@ -111,7 +111,7 @@ pub async fn serve_static(
                 (header::CONTENT_TYPE, HeaderValue::from_static("text/html")),
                 (header::CONTENT_ENCODING, HeaderValue::from_static("gzip")),
             ],
-//            include_bytes!("../web/build/index.html.gz"),
+            include_bytes!("../web/build/index.html.gz"),
         )
             .into_response(),
         path => {

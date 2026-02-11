@@ -18,9 +18,12 @@ pub mod wingtech;
 
 const LOW_BATTERY_LEVEL: u8 = 10;
 
-#[derive(Clone, Copy, PartialEq, Debug, Serialize)]
+/// Device battery information
+#[derive(Clone, Copy, PartialEq, Debug, Serialize, utoipa::ToSchema)]
 pub struct BatteryState {
+    /// The current level in percentage of the device battery
     level: u8,
+    /// A boolean indicating whether the battery is currently being charged
     is_plugged_in: bool,
 }
 

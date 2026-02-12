@@ -630,7 +630,7 @@ jobs:
           rm $release_tag
           mv dist api-docs
           mv openapi.json api-docs/
-          sed -i "s|https://petstore.swagger.io/v2/swagger.json|swagger.json|g" api-docs/swagger-initializer.js
+          sed -i "s|https://petstore.swagger.io/v2/swagger.json|openapi.json|g" api-docs/swagger-initializer.js
       - uses: actions/upload-artifact@v4
         with:
           name: api-docs

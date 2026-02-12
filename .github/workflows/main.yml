@@ -584,7 +584,6 @@ jobs:
     if: needs.files_changed.outputs.daemon_needed == 'true'
     needs:
       - files_changed
-      - build_rayhunter
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -606,15 +605,35 @@ jobs:
           npm run build
           popd
           CC_armv7_unknown_linux_musleabihf=arm-linux-gnueabihf-gcc cargo run --bin gen_api -- ./openapi.json
-      - name: Generate swagger-ui
-        uses: Legion2/swagger-ui-action@v1
-        with:
-          spec-file: ./openapi.json
-          output: swagger-ui
       - uses: actions/upload-artifact@v4
         with:
-          name: swagger-ui
-          path: swagger-ui
+          name: openapi.json
+          path: openapi.json
+
+  openapi_to_swagger:
+    needs:
+      - openapi_build
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: openapi.json
+      - name: Download swagger
+        id: swagger-version
+        run: |
+          release_tag=$(curl -sL https://api.github.com/repos/swagger-api/swagger-ui/releases/latest | jq -r ".tag_name")
+          echo "release_tag=$release_tag" >> $GITHUB_OUTPUT
+          curl -sL -o $release_tag https://api.github.com/repos/swagger-api/swagger-ui/tarball/$release_tag
+          tar -xzf $release_tag --strip-components=1 $(tar -tzf $release_tag | head -1 | cut -f1 -d"/")/api-docs
+          rm $release_tag
+          mv openapi.json api-docs/
+          sed -i "s|https://petstore.swagger.io/v2/swagger.json|swagger.json|g" api-docs/swagger-initializer.js
+      - uses: actions/upload-artifact@v4
+        with:
+          name: api-docs
+          path: api-docs
 
   github_pages_publish:
     name: Upload new documentation to Github Pages
@@ -625,7 +644,7 @@ jobs:
       id-token: write
     needs:
       - mdbook_build
-      - openapi_build
+      - openapi_to_swagger
     runs-on: ubuntu-latest
     steps:
       - name: Setup Pages
@@ -633,12 +652,12 @@ jobs:
       - uses: actions/download-artifact@v4
       - name: Organize pages into directory
         run: |
-          mkdir deployment
-          cp -a swagger-ui deployment/
-          cp -a book/ deployment/
+          mkdir pages
+          cp -a api-docs pages/
+          cp -a book/ pages/
       - name: Upload pages
         uses: actions/upload-pages-artifact@v3
         with:
-          path: deployment
+          path: pages
       - name: Deploy Github Pages
         uses: actions/deploy-pages@v4

@@ -15,7 +15,14 @@ pub mod stats;
 // Add anotated paths to api docs
 #[derive(OpenApi)]
 #[openapi(
-    info(description = "OpenAPI documentation for Rayhunter daemon"),
+    info(
+        description = "OpenAPI documentation for Rayhunter daemon",
+        license(
+            name = "GNU General Public License v3.0",
+            identifier = "GPL-3.0-only",
+            url = "https://github.com/EFForg/rayhunter/blob/main/LICENSE"
+        )
+    ),
     paths(
         pcap::get_pcap,
         server::get_qmdl,

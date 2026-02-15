@@ -622,7 +622,7 @@ jobs:
       id-token: write
     needs:
       - mdbook_build
-      - openapi_to_swagger
+      - openapi_build
     runs-on: ubuntu-latest
     steps:
       - name: Setup Pages

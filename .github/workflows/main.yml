@@ -601,7 +601,7 @@ jobs:
       - name: Build rayhunter-daemon openapi docs
         run: |
           mkdir -p daemon/web/build
-          touch daemon/web/build{favicon.png,index.html.gz,rayhunter_orca_only.png,rayhunter_text.png}
+          touch daemon/web/build/{favicon.png,index.html.gz,rayhunter_orca_only.png,rayhunter_text.png}
           cargo run --bin gen_api -- ./rayhunter-openapi.json
       - uses: actions/upload-artifact@v4
         with:

@@ -20,8 +20,8 @@ pub enum DisplayState {
     /// We're not recording.
     Paused,
     /// A non-informational event has been detected.
-    //
-    // Note that EventType::Informational is never sent through this. If it is, it's the same as
-    // Recording
+    ///
+    /// Note that EventType::Informational is never sent through this. If it is, it's the same as
+    /// Recording
     WarningDetected { event_type: EventType },
 }

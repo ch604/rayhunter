@@ -603,25 +603,10 @@ jobs:
           mkdir -p daemon/web/build
           touch daemon/web/build/{favicon.png,index.html.gz,rayhunter_orca_only.png,rayhunter_text.png}
           cargo run --bin gen_api -- ./rayhunter-openapi.json
-      - uses: actions/upload-artifact@v4
-        with:
-          name: rayhunter-openapi.json
-          path: rayhunter-openapi.json
-
-  openapi_to_swagger:
-    needs:
-      - openapi_build
-    permissions:
-      contents: write
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: rayhunter-openapi.json
       - name: Make swagger folder
         run: |
           mkdir api-docs
-          mv doc/api-docs.html api-docs/index.html
+          mv doc/swagger-ui.html api-docs/index.html
           mv rayhunter-openapi.json api-docs/
       - uses: actions/upload-artifact@v4
         with:

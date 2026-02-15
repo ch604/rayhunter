@@ -6,7 +6,6 @@ on:
   pull_request:
     branches: [ main ]
   workflow_call:  # required to call this workflow from another workflow like release.yml
-  workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always
@@ -601,16 +600,13 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y gcc-arm-linux-gnueabihf
       - name: Build rayhunter-daemon openapi docs
         run: |
-          pushd daemon/web
-          # still need to build these files to avoid compile error for rayhunter-daemon
-          npm install
-          npm run build
-          popd
-          CC_armv7_unknown_linux_musleabihf=arm-linux-gnueabihf-gcc cargo run --bin gen_api -- ./openapi.json
+          mkdir -p daemon/web/build
+          touch daemon/web/build{favicon.png,index.html.gz,rayhunter_orca_only.png,rayhunter_text.png}
+          cargo run --bin gen_api -- ./rayhunter-openapi.json
       - uses: actions/upload-artifact@v4
         with:
-          name: openapi.json
-          path: openapi.json
+          name: rayhunter-openapi.json
+          path: rayhunter-openapi.json
 
   openapi_to_swagger:
     needs:
@@ -621,18 +617,12 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: openapi.json
-      - name: Download swagger
-        id: swagger-version
+          name: rayhunter-openapi.json
+      - name: Make swagger folder
         run: |
-          release_tag=$(curl -sL https://api.github.com/repos/swagger-api/swagger-ui/releases/latest | jq -r ".tag_name")
-          echo "release_tag=$release_tag" >> $GITHUB_OUTPUT
-          curl -sL -o $release_tag https://api.github.com/repos/swagger-api/swagger-ui/tarball/$release_tag
-          tar -xzf $release_tag --strip-components=1 $(tar -tzf $release_tag | head -1 | cut -f1 -d"/")/dist
-          rm $release_tag
-          mv dist api-docs
-          mv openapi.json api-docs/
-          sed -i "s|https://petstore.swagger.io/v2/swagger.json|openapi.json|g" api-docs/swagger-initializer.js
+          mkdir api-docs
+          mv doc/swagger-ui.html api-docs
+          mv rayhunter-openapi.json api-docs/
       - uses: actions/upload-artifact@v4
         with:
           name: api-docs

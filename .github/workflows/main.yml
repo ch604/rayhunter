@@ -621,7 +621,7 @@ jobs:
       - name: Make swagger folder
         run: |
           mkdir api-docs
-          mv doc/swagger-ui.html api-docs
+          mv doc/api-docs.html api-docs/index.html
           mv rayhunter-openapi.json api-docs/
       - uses: actions/upload-artifact@v4
         with:

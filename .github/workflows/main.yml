@@ -596,13 +596,11 @@ jobs:
         with:
           targets: armv7-unknown-linux-musleabihf
       - uses: Swatinem/rust-cache@v2
-      - name: Install ARM cross-compilation toolchain
-        run: sudo apt-get update && sudo apt-get install -y gcc-arm-linux-gnueabihf
       - name: Build rayhunter-daemon openapi docs
         run: |
           mkdir -p daemon/web/build
           touch daemon/web/build/{favicon.png,index.html.gz,rayhunter_orca_only.png,rayhunter_text.png}
-          cargo run --bin gen_api -- ./rayhunter-openapi.json
+          cargo run --bin gen_api --features apidocs -- ./rayhunter-openapi.json
       - name: Make swagger folder
         run: |
           mkdir api-docs

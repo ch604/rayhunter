@@ -8,6 +8,11 @@ rust-version = "1.88.0"
 name = "rayhunter_daemon"
 path = "src/lib.rs"
 
+[[bin]]
+name = "gen_api"
+path = "src/bin/gen_api.rs"
+required-features = ["apidocs"]
+
 [features]
 default = ["rustcrypto-tls"]
 rustcrypto-tls = ["reqwest/rustls-tls-webpki-roots-no-provider", "dep:rustls-rustcrypto"]

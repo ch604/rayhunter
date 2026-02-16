@@ -14,7 +14,8 @@ use serde::Serialize;
 use tokio::process::Command;
 
 /// Structure of device system statistics
-#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[derive(Debug, Serialize)]
+#[cfg_attr(feature = "apidocs", derive(utoipa::ToSchema))]
 pub struct SystemStats {
     pub disk_stats: DiskStats,
     pub memory_stats: MemoryStats,
@@ -42,7 +43,8 @@ impl SystemStats {
 }
 
 /// Device storage information
-#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[derive(Debug, Serialize)]
+#[cfg_attr(feature = "apidocs", derive(utoipa::ToSchema))]
 pub struct DiskStats {
     /// The partition to which the daemon is installed
     partition: String,
@@ -88,7 +90,8 @@ impl DiskStats {
 }
 
 /// Device memory information
-#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[derive(Debug, Serialize)]
+#[cfg_attr(feature = "apidocs", derive(utoipa::ToSchema))]
 pub struct MemoryStats {
     /// The total memory available on the device
     total: String,
@@ -175,7 +178,8 @@ pub async fn get_system_stats(
 }
 
 /// QMDL manifest information
-#[derive(Serialize, utoipa::ToSchema)]
+#[derive(Serialize)]
+#[cfg_attr(feature = "apidocs", derive(utoipa::ToSchema))]
 pub struct ManifestStats {
     /// A vector containing the names of the QMDL files
     pub entries: Vec<ManifestEntry>,

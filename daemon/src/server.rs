@@ -226,20 +226,22 @@ pub async fn test_notification(
 }
 
 /// Response for GET /api/time
-#[derive(Serialize, utoipa::ToSchema)]
+#[derive(Serialize)]
+#[cfg_attr(feature = "apidocs", derive(utoipa::ToSchema))]
 pub struct TimeResponse {
     /// The raw system time (without clock offset)
-    #[schema(value_type = String)]
+    #[cfg_attr(feature = "apidocs", schema(value_type = String))]
     pub system_time: DateTime<Local>,
     /// The adjusted time (system time + offset)
-    #[schema(value_type = String)]
+    #[cfg_attr(feature = "apidocs", schema(value_type = String))]
     pub adjusted_time: DateTime<Local>,
     /// The current offset in seconds
     pub offset_seconds: i64,
 }
 
 /// Request for POST /api/time-offset
-#[derive(Deserialize, utoipa::ToSchema)]
+#[derive(Deserialize)]
+#[cfg_attr(feature = "apidocs", derive(utoipa::ToSchema))]
 pub struct SetTimeOffsetRequest {
     /// The offset to set, in seconds
     pub offset_seconds: i64,

@@ -78,7 +78,8 @@ impl AnalysisWriter {
 }
 
 /// The system status relating to QMDL file analysis
-#[derive(Debug, Serialize, Clone, utoipa::ToSchema)]
+#[derive(Debug, Serialize, Clone)]
+#[cfg_attr(feature = "apidocs", derive(utoipa::ToSchema))]
 pub struct AnalysisStatus {
     /// The vector array of queued files
     queued: Vec<String>,

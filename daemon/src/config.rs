@@ -32,6 +32,8 @@ pub struct Config {
     pub enabled_notifications: Vec<NotificationType>,
     /// Vector containing the list of enabled analyzers
     pub analyzers: AnalyzerConfig,
+    pub min_space_to_start_recording_mb: u64,
+    pub min_space_to_continue_recording_mb: u64,
 }
 
 impl Default for Config {
@@ -47,6 +49,8 @@ impl Default for Config {
             analyzers: AnalyzerConfig::default(),
             ntfy_url: None,
             enabled_notifications: vec![NotificationType::Warning, NotificationType::LowBattery],
+            min_space_to_start_recording_mb: 1,
+            min_space_to_continue_recording_mb: 1,
         }
     }
 }

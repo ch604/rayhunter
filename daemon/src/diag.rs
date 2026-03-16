@@ -29,10 +29,15 @@ use crate::display;
 use crate::notifications::{Notification, NotificationType};
 use crate::qmdl_store::{RecordingStore, RecordingStoreError};
 use crate::server::ServerState;
+use crate::stats::DiskStats;
+
+const DISK_CHECK_BYTES_INTERVAL: usize = 256 * 1024;
 
 pub enum DiagDeviceCtrlMessage {
     StopRecording,
-    StartRecording,
+    StartRecording {
+        response_tx: Option<oneshot::Sender<Result<(), String>>>,
+    },
     DeleteEntry {
         name: String,
         response_tx: oneshot::Sender<Result<(), RecordingStoreError>>,
@@ -48,8 +53,12 @@ pub struct DiagTask {
     analysis_sender: Sender<AnalysisCtrlMessage>,
     analyzer_config: AnalyzerConfig,
     notification_channel: tokio::sync::mpsc::Sender<Notification>,
+    min_space_to_start_mb: u64,
+    min_space_to_continue_mb: u64,
     state: DiagState,
     max_type_seen: EventType,
+    bytes_since_space_check: usize,
+    low_space_warned: bool,
 }
 
 enum DiagState {
@@ -60,36 +69,99 @@ enum DiagState {
     Stopped,
 }
 
+enum DiskSpaceCheck {
+    Ok(u64),
+    Warning(u64),
+    Critical(u64),
+    Failed,
+}
+
+fn check_disk_space(path: &std::path::Path, warning_mb: u64, critical_mb: u64) -> DiskSpaceCheck {
+    match DiskStats::new(path.to_str().unwrap()) {
+        Ok(stats) => {
+            let available_mb = stats.available_bytes.unwrap_or(0) / 1024 / 1024;
+            if available_mb < critical_mb {
+                DiskSpaceCheck::Critical(available_mb)
+            } else if available_mb < warning_mb {
+                DiskSpaceCheck::Warning(available_mb)
+            } else {
+                DiskSpaceCheck::Ok(available_mb)
+            }
+        }
+        Err(e) => {
+            warn!("Failed to check disk space: {e}");
+            DiskSpaceCheck::Failed
+        }
+    }
+}
+
 impl DiagTask {
     fn new(
         ui_update_sender: Sender<display::DisplayState>,
         analysis_sender: Sender<AnalysisCtrlMessage>,
         analyzer_config: AnalyzerConfig,
         notification_channel: tokio::sync::mpsc::Sender<Notification>,
+        min_space_to_start_mb: u64,
+        min_space_to_continue_mb: u64,
     ) -> Self {
         Self {
             ui_update_sender,
             analysis_sender,
             analyzer_config,
             notification_channel,
+            min_space_to_start_mb,
+            min_space_to_continue_mb,
             state: DiagState::Stopped,
             max_type_seen: EventType::Informational,
+            bytes_since_space_check: 0,
+            low_space_warned: false,
         }
     }
 
-    /// Start recording
-    async fn start(&mut self, qmdl_store: &mut RecordingStore) {
+    /// Start recording, returning an error if disk space is too low.
+    async fn start(&mut self, qmdl_store: &mut RecordingStore) -> Result<(), String> {
         self.max_type_seen = EventType::Informational;
-        let (qmdl_file, analysis_file) = qmdl_store
-            .new_entry()
-            .await
-            .expect("failed creating QMDL file entry");
+        self.bytes_since_space_check = 0;
+        self.low_space_warned = false;
+
+        match check_disk_space(
+            &qmdl_store.path,
+            self.min_space_to_start_mb,
+            self.min_space_to_continue_mb,
+        ) {
+            DiskSpaceCheck::Critical(mb) | DiskSpaceCheck::Warning(mb) => {
+                let msg = format!(
+                    "Insufficient disk space: {}MB available, {}MB required",
+                    mb, self.min_space_to_start_mb
+                );
+                error!("{msg}");
+                return Err(msg);
+            }
+            DiskSpaceCheck::Ok(mb) => {
+                info!("Starting recording with {}MB disk space available", mb);
+            }
+            DiskSpaceCheck::Failed => {}
+        }
+
+        let (qmdl_file, analysis_file) = match qmdl_store.new_entry().await {
+            Ok(files) => files,
+            Err(e) => {
+                let msg = format!("failed creating QMDL file entry: {e}");
+                error!("{msg}");
+                return Err(msg);
+            }
+        };
         self.stop_current_recording().await;
         let qmdl_writer = QmdlWriter::new(qmdl_file);
-        let analysis_writer = AnalysisWriter::new(analysis_file, &self.analyzer_config)
-            .await
-            .map(Box::new)
-            .expect("failed to write to analysis file");
+        let analysis_writer = match AnalysisWriter::new(analysis_file, &self.analyzer_config).await
+        {
+            Ok(writer) => Box::new(writer),
+            Err(e) => {
+                let msg = format!("failed to create analysis writer: {e}");
+                error!("{msg}");
+                return Err(msg);
+            }
+        };
         self.state = DiagState::Recording {
             qmdl_writer,
             analysis_writer,
@@ -101,11 +173,17 @@ impl DiagTask {
         {
             warn!("couldn't send ui update message: {e}");
         }
+        Ok(())
     }
 
-    /// Stop recording
-    async fn stop(&mut self, qmdl_store: &mut RecordingStore) {
+    /// Stop recording, optionally annotating the entry with a reason.
+    async fn stop(&mut self, qmdl_store: &mut RecordingStore, reason: Option<String>) {
         self.stop_current_recording().await;
+        if let Some(reason) = reason
+            && let Err(e) = qmdl_store.set_current_stop_reason(reason).await
+        {
+            warn!("couldn't set stop reason: {e}");
+        }
         if let Some((_, entry)) = qmdl_store.get_current_entry()
             && let Err(e) = self
                 .analysis_sender
@@ -134,7 +212,7 @@ impl DiagTask {
         name: &str,
     ) -> Result<(), RecordingStoreError> {
         if qmdl_store.is_current_entry(name) {
-            self.stop(qmdl_store).await;
+            self.stop(qmdl_store, None).await;
         }
         let res = qmdl_store.delete_entry(name).await;
         if let Err(e) = res.as_ref() {
@@ -147,7 +225,7 @@ impl DiagTask {
         &mut self,
         qmdl_store: &mut RecordingStore,
     ) -> Result<(), RecordingStoreError> {
-        self.stop(qmdl_store).await;
+        self.stop(qmdl_store, None).await;
         let res = qmdl_store.delete_all_entries().await;
         if let Err(e) = res.as_ref() {
             error!("Error deleting QMDL entries {e}");
@@ -185,10 +263,56 @@ impl DiagTask {
             analysis_writer,
         } = &mut self.state
         {
-            qmdl_writer
-                .write_container(&container)
-                .await
-                .expect("failed to write to QMDL writer");
+            if self.bytes_since_space_check >= DISK_CHECK_BYTES_INTERVAL {
+                self.bytes_since_space_check = 0;
+                match check_disk_space(
+                    &qmdl_store.path,
+                    self.min_space_to_start_mb,
+                    self.min_space_to_continue_mb,
+                ) {
+                    DiskSpaceCheck::Critical(mb) => {
+                        let reason = format!(
+                            "Disk space critically low ({}MB free), recording stopped automatically",
+                            mb
+                        );
+                        error!("{reason}");
+
+                        self.notification_channel
+                            .send(Notification::new(
+                                NotificationType::Warning,
+                                reason.clone(),
+                                None,
+                            ))
+                            .await
+                            .ok();
+
+                        self.stop(qmdl_store, Some(reason)).await;
+                        return;
+                    }
+                    DiskSpaceCheck::Warning(mb) => {
+                        if !self.low_space_warned {
+                            self.low_space_warned = true;
+                            warn!("Disk space low: {}MB remaining", mb);
+                            self.notification_channel
+                                .send(Notification::new(
+                                    NotificationType::Warning,
+                                    format!("Disk space low: {}MB free", mb),
+                                    Some(Duration::from_secs(30)),
+                                ))
+                                .await
+                                .ok();
+                        }
+                    }
+                    _ => {}
+                }
+            }
+
+            if let Err(e) = qmdl_writer.write_container(&container).await {
+                let reason = format!("failed to write to QMDL (disk full?): {e}");
+                error!("{reason}");
+                self.stop(qmdl_store, Some(reason)).await;
+                return;
+            }
             debug!(
                 "total QMDL bytes written: {}, updating manifest...",
                 qmdl_writer.total_written
@@ -196,15 +320,25 @@ impl DiagTask {
             let index = qmdl_store
                 .current_entry
                 .expect("DiagDevice had qmdl_writer, but QmdlStore didn't have current entry???");
-            qmdl_store
+            if let Err(e) = qmdl_store
                 .update_entry_qmdl_size(index, qmdl_writer.total_written)
                 .await
-                .expect("failed to update qmdl file size");
+            {
+                let reason = format!("failed to update manifest (disk full?): {e}");
+                error!("{reason}");
+                self.stop(qmdl_store, Some(reason)).await;
+                return;
+            }
             debug!("done!");
-            let max_type = analysis_writer
-                .analyze(container)
-                .await
-                .expect("failed to analyze container");
+            let container_bytes: usize = container.messages.iter().map(|m| m.data.len()).sum();
+            self.bytes_since_space_check += container_bytes;
+            let max_type = match analysis_writer.analyze(container).await {
+                Ok(t) => t,
+                Err(e) => {
+                    warn!("failed to analyze container: {e}");
+                    EventType::Informational
+                }
+            };
 
             if max_type > EventType::Informational {
                 info!("a heuristic triggered on this run!");
@@ -246,25 +380,30 @@ pub fn run_diag_read_thread(
     analysis_sender: Sender<AnalysisCtrlMessage>,
     analyzer_config: AnalyzerConfig,
     notification_channel: tokio::sync::mpsc::Sender<Notification>,
+    min_space_to_start_mb: u64,
+    min_space_to_continue_mb: u64,
 ) {
     task_tracker.spawn(async move {
         let mut diag_stream = pin!(dev.as_stream().into_stream());
-        let mut diag_task = DiagTask::new(ui_update_sender, analysis_sender, analyzer_config, notification_channel);
+        let mut diag_task = DiagTask::new(ui_update_sender, analysis_sender, analyzer_config, notification_channel, min_space_to_start_mb, min_space_to_continue_mb);
         qmdl_file_tx
-            .send(DiagDeviceCtrlMessage::StartRecording)
+            .send(DiagDeviceCtrlMessage::StartRecording { response_tx: None })
             .await
             .unwrap();
         loop {
             tokio::select! {
                 msg = qmdl_file_rx.recv() => {
                     match msg {
-                        Some(DiagDeviceCtrlMessage::StartRecording) => {
+                        Some(DiagDeviceCtrlMessage::StartRecording { response_tx }) => {
                             let mut qmdl_store = qmdl_store_lock.write().await;
-                            diag_task.start(qmdl_store.deref_mut()).await;
+                            let result = diag_task.start(qmdl_store.deref_mut()).await;
+                            if let Some(tx) = response_tx {
+                                tx.send(result).ok();
+                            }
                         },
                         Some(DiagDeviceCtrlMessage::StopRecording) => {
                             let mut qmdl_store = qmdl_store_lock.write().await;
-                            diag_task.stop(qmdl_store.deref_mut()).await;
+                            diag_task.stop(qmdl_store.deref_mut(), None).await;
                         },
                         // None means all the Senders have been dropped, so it's
                         // time to go
@@ -326,9 +465,12 @@ pub async fn start_recording(
         return Err((StatusCode::FORBIDDEN, "server is in debug mode".to_string()));
     }
 
+    let (response_tx, response_rx) = oneshot::channel();
     state
         .diag_device_ctrl_sender
-        .send(DiagDeviceCtrlMessage::StartRecording)
+        .send(DiagDeviceCtrlMessage::StartRecording {
+            response_tx: Some(response_tx),
+        })
         .await
         .map_err(|e| {
             (
@@ -337,7 +479,14 @@ pub async fn start_recording(
             )
         })?;
 
-    Ok((StatusCode::ACCEPTED, "ok".to_string()))
+    match response_rx.await {
+        Ok(Ok(())) => Ok((StatusCode::ACCEPTED, "ok".to_string())),
+        Ok(Err(reason)) => Err((StatusCode::INSUFFICIENT_STORAGE, reason)),
+        Err(e) => Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("failed to receive start recording response: {e}"),
+        )),
+    }
 }
 
 /// Stop recording API for web thread

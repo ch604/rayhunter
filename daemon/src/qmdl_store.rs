@@ -65,6 +65,8 @@ pub struct ManifestEntry {
     pub system_os: Option<String>,
     /// The architecture on which the OS was running
     pub arch: Option<String>,
+    #[serde(default)]
+    pub stop_reason: Option<String>,
 }
 
 impl ManifestEntry {
@@ -79,6 +81,7 @@ impl ManifestEntry {
             rayhunter_version: Some(metadata.rayhunter_version),
             system_os: Some(metadata.system_os),
             arch: Some(metadata.arch),
+            stop_reason: None,
         }
     }
 
@@ -208,6 +211,7 @@ impl RecordingStore {
                 rayhunter_version: None,
                 system_os: None,
                 arch: None,
+                stop_reason: None,
             });
         }
 
@@ -351,6 +355,17 @@ impl RecordingStore {
     pub fn get_current_entry(&self) -> Option<(usize, &ManifestEntry)> {
         let entry_index = self.current_entry?;
         Some((entry_index, &self.manifest.entries[entry_index]))
+    }
+
+    pub async fn set_current_stop_reason(
+        &mut self,
+        reason: String,
+    ) -> Result<(), RecordingStoreError> {
+        if let Some(idx) = self.current_entry {
+            self.manifest.entries[idx].stop_reason = Some(reason);
+            self.write_manifest().await?;
+        }
+        Ok(())
     }
 
     pub fn is_current_entry(&self, name: &str) -> bool {
